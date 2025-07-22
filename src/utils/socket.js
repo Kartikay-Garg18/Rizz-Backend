@@ -9,15 +9,14 @@ const userSocketMap = {};
 // Improved Socket.io configuration for Vercel deployment
 const io = new Server(server, {
     cors: {
-        // Use explicit origin for production or allow all for development
-        origin: process.env.NODE_ENV === 'production' 
-            ? [process.env.CORS_ORIGIN, /\.vercel\.app$/] 
-            : "*",
+        // Allow all origins and handle CORS at the Express level
+        origin: "*",
         credentials: true,
-        methods: ["GET", "POST", "PUT", "DELETE", "PATCH"]
+        methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"]
     },
     allowEIO3: true, // Allow Engine.IO v3 compatibility
-    transports: ['websocket', 'polling'], // Support both WebSocket and polling
+    transports: ['polling', 'websocket'], // Start with polling to establish connection reliably
     pingTimeout: 60000, // Increased timeout for serverless environments
     pingInterval: 25000, // More frequent pings to keep connection alive
     maxHttpBufferSize: 1e8, // Increased buffer size for larger payloads
