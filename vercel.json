@@ -1,9 +1,55 @@
 {
   "version": 2,
   "builds": [
-    { "src": "src/index.js", "use": "@vercel/node" }
+    { 
+      "src": "src/index.js", 
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["public/**"],
+        "maxLambdaSize": "50mb"
+      }
+    }
   ],
   "routes": [
-    { "src": "/(.*)", "dest": "src/index.js" }
-  ]
+    { 
+      "src": "/socket.io/(.*)",
+      "dest": "src/index.js",
+      "headers": {
+        "Connection": "upgrade",
+        "Upgrade": "websocket",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
+        "Access-Control-Allow-Headers": "X-Requested-With,Content-Type,Accept",
+        "Access-Control-Allow-Credentials": "true",
+        "Cache-Control": "no-cache, no-store, must-revalidate"
+      }
+    },
+    {
+      "src": "/socket.io/socket.io.js",
+      "dest": "src/index.js"
+    },
+    {
+      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|ico|json|svg)$)",
+      "dest": "public/$1",
+      "headers": {
+        "Cache-Control": "public, max-age=86400"
+      }
+    },
+    {
+      "src": "/public/(.*)",
+      "dest": "public/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "src/index.js",
+      "headers": {
+        "x-vercel-deployment": "true"
+      }
+    }
+  ],
+  "regions": ["cdg1"], 
+  "env": {
+    "NODE_ENV": "production",
+    "VERCEL": "true"
+  }
 }

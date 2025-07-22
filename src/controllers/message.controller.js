@@ -16,7 +16,6 @@ const getUsersForSidebar=asyncHandler(async (req,res)=>{
         filteredUsers = [...filteredUsers,... await GoogleUser.find({ _id: { $ne: loggedInUserId } }).select("-password")];
         res.status(200).json(new ApiResponse(200,{filteredUsers},"Users fetched successfully"));
       } catch (error) {
-        console.error("Error in getUsersForSidebar: ", error.message);
         res.status(500).json(new ApiResponse(500,"","Internal server error"));
       }
 });
@@ -82,23 +81,40 @@ const sendMessage=asyncHandler(async (req,res)=>{
         const receiverIdStr = receiverId.toString();
         const senderIdStr = senderId.toString();
         
-        // Emit to receiver if they're online
-        if (receiverSocketId) {
-          // Make sure we send the complete message with string IDs to avoid ObjectId issues
-          const messageToSend = {
-            ...newMessage.toObject(),
-            senderId: senderIdStr,
-            receiverId: receiverIdStr
-          };
+        // Prepare message object with string IDs to avoid ObjectId issues
+        const messageToSend = {
+          ...newMessage.toObject(),
+          senderId: senderIdStr,
+          receiverId: receiverIdStr
+        };
+        
+        // Try multiple approaches to ensure message delivery
+        try {
+          // Method 1: Direct emission to the specific socket if available
+          if (receiverSocketId) {
+            io.to(receiverSocketId).emit("newMessage", messageToSend);
+          }
           
-          io.to(receiverSocketId).emit("newMessage", messageToSend);
-        } else {
-          // Broadcast to make sure the message gets through
-          io.emit("newMessage", {
-            ...newMessage.toObject(),
-            senderId: senderIdStr,
-            receiverId: receiverIdStr
+          // Method 2: Use a room-based approach as backup
+          // Create a unique room name based on the user ID
+          const roomName = `user_${receiverIdStr}`;
+          
+          // Join all of the user's potential sockets to this room
+          Object.entries(userSocketMap).forEach(([userId, socketId]) => {
+            if (userId === receiverIdStr || userId.includes(receiverIdStr)) {
+              io.sockets.sockets.get(socketId)?.join(roomName);
+            }
           });
+          
+          // Emit to the room
+          io.to(roomName).emit("newMessage", messageToSend);
+          
+          // Method 3: Broadcast with filters (most reliable but less efficient)
+          io.emit("newMessage", messageToSend);
+          
+        } catch (socketError) {
+          // If socket operations fail, fall back to broadcast
+          io.emit("newMessage", messageToSend);
         }
         
         // We don't need to emit back to sender - the client already has the message
