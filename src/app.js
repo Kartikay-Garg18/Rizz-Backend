@@ -5,6 +5,11 @@ import messageRouter from './routes/message.routes.js'
 import cors from 'cors'
 import {app} from './utils/socket.js'
 
+// A global error handler for logging
+process.on('uncaughtException', (error) => {
+  console.error('UNCAUGHT EXCEPTION:', error);
+});
+
 // Improved CORS configuration for Vercel with explicit domains
 const corsOptions = {
     origin: function(origin, callback) {
@@ -49,21 +54,31 @@ const corsOptions = {
     maxAge: 86400 // Cache preflight response for 24 hours
 }
 
-// Apply CORS before other middleware
-app.use(cors(corsOptions));
-
-// Handle preflight requests explicitly
-app.options('*', cors(corsOptions));
-
-// Manual CORS headers for problematic clients
+// MOST PERMISSIVE CORS - Override all other CORS configurations
+// This is a last resort approach for debugging
 app.use((req, res, next) => {
-    // Set CORS headers for every response
-    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    // Set permissive CORS headers for ALL requests
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Auth-Token');
     res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    
+    // Handle preflight requests immediately
+    if (req.method === 'OPTIONS') {
+        console.log('*** Intercepted OPTIONS request ***');
+        return res.status(204).end();
+    }
+    
     next();
 });
+
+// Standard CORS middleware as backup
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    credentials: true
+}));
 
 // Setup middleware with optimizations for serverless
 app.use(express.json({ 
@@ -138,8 +153,38 @@ app.use((req, res, next) => {
     next();
 });
 
+// Explicit handlers for auth routes preflight requests
+app.options('/auth/*', (req, res) => {
+    console.log('AUTH OPTIONS REQUEST RECEIVED');
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+    res.header('Access-Control-Max-Age', '86400'); // 24 hours
+    res.sendStatus(204);
+});
+
+// Specific handler for the login endpoint that's showing errors
+app.options('/auth/login', (req, res) => {
+    console.log('LOGIN OPTIONS REQUEST RECEIVED');
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+    res.header('Access-Control-Max-Age', '86400'); // 24 hours
+    res.sendStatus(204);
+});
+
 app.use('/auth', userRouter);
 app.use('/messages', messageRouter);
+
+// Add a test endpoint to verify CORS
+app.get('/cors-test', (req, res) => {
+    res.json({ 
+        success: true, 
+        message: 'CORS test successful',
+        headers: req.headers,
+        origin: req.headers.origin
+    });
+});
 
 app.get('/', (req, res) => {
     res.send('Welcome to the Chat Application API');

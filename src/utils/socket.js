@@ -9,11 +9,11 @@ const userSocketMap = {};
 // Improved Socket.io configuration for Vercel deployment
 const io = new Server(server, {
     cors: {
-        // Allow all origins and handle CORS at the Express level
+        // Completely permissive CORS - Override socket.io's default behavior
         origin: "*",
-        credentials: true,
+        credentials: false, // Changed to false to avoid CORS preflight with credentials
         methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-        allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"]
+        allowedHeaders: ["*"] // Allow all headers
     },
     allowEIO3: true, // Allow Engine.IO v3 compatibility
     transports: ['polling', 'websocket'], // Start with polling to establish connection reliably

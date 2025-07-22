@@ -8,6 +8,27 @@ dotenv.config({
     path: './.env'
 });
 
+// Add a direct middleware to the http server for handling preflight requests
+// This is a last resort approach to fix CORS issues
+server.on('request', (req, res) => {
+    // Only intercept OPTIONS requests
+    if (req.method === 'OPTIONS') {
+        console.log('HTTP SERVER LEVEL: Intercepted OPTIONS request for:', req.url);
+        
+        // Set CORS headers
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Request-Method', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET, POST, PUT, DELETE, PATCH');
+        res.setHeader('Access-Control-Allow-Headers', '*');
+        
+        // End the request with 204 status
+        res.writeHead(204);
+        res.end();
+        return true; // Indicate that we've handled the request
+    }
+    return false; // Let the normal request flow continue
+});
+
 const PORT = process.env.PORT || 3000;
 const IS_VERCEL = process.env.VERCEL === '1' || process.env.VERCEL === 'true';
 const NODE_ENV = process.env.NODE_ENV || 'development';

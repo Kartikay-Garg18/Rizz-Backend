@@ -10,93 +10,14 @@
       }
     }
   ],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET,POST,PUT,DELETE,PATCH,OPTIONS" },
-        { "key": "Access-Control-Allow-Headers", "value": "X-Requested-With,Content-Type,Accept,Authorization,Origin" },
-        { "key": "Access-Control-Allow-Credentials", "value": "true" }
-      ]
-    },
-    {
-      "source": "/socket.io/(.*)",
-      "headers": [
-        { "key": "Connection", "value": "upgrade" },
-        { "key": "Upgrade", "value": "websocket" }
-      ]
-    }
-  ],
   "routes": [
-    {
-      "src": "/auth/(.*)",
-      "methods": ["OPTIONS"],
-      "dest": "/src/index.js"
-    },
-    {
-      "src": "/messages/(.*)",
-      "methods": ["OPTIONS"],
-      "dest": "/src/index.js"
-    },
     { 
       "src": "/socket.io/(.*)",
-      "dest": "src/index.js",
-      "headers": {
-        "Connection": "upgrade",
-        "Upgrade": "websocket",
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
-        "Access-Control-Allow-Headers": "X-Requested-With,Content-Type,Accept,Authorization,Origin",
-        "Access-Control-Allow-Credentials": "true",
-        "Cache-Control": "no-cache, no-store, must-revalidate"
-      }
-    },
-    {
-      "src": "/socket.io/socket.io.js",
       "dest": "src/index.js"
     },
     {
-      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|ico|json|svg)$)",
-      "dest": "public/$1",
-      "headers": {
-        "Cache-Control": "public, max-age=86400"
-      }
-    },
-    {
-      "src": "/public/(.*)",
-      "dest": "public/$1"
-    },
-    {
-      "src": "/auth/(.*)",
-      "dest": "src/index.js",
-      "headers": {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,PATCH,OPTIONS",
-        "Access-Control-Allow-Headers": "X-Requested-With,Content-Type,Accept,Authorization,Origin",
-        "Access-Control-Allow-Credentials": "true"
-      }
-    },
-    {
-      "src": "/messages/(.*)",
-      "dest": "src/index.js",
-      "headers": {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,PATCH,OPTIONS",
-        "Access-Control-Allow-Headers": "X-Requested-With,Content-Type,Accept,Authorization,Origin",
-        "Access-Control-Allow-Credentials": "true"
-      }
-    },
-    {
       "src": "/(.*)",
-      "dest": "src/index.js",
-      "headers": {
-        "x-vercel-deployment": "true",
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,PATCH,OPTIONS",
-        "Access-Control-Allow-Headers": "X-Requested-With,Content-Type,Accept,Authorization,Origin",
-        "Access-Control-Allow-Credentials": "true"
-      }
+      "dest": "src/index.js"
     }
   ],
   "regions": ["cdg1"], 
