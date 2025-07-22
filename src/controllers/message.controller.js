@@ -14,9 +14,15 @@ const getUsersForSidebar=asyncHandler(async (req,res)=>{
         const loggedInUserId = req.user._id;
         let filteredUsers = await User.find({ _id: { $ne: loggedInUserId } }).select("-password");
         filteredUsers = [...filteredUsers,... await GoogleUser.find({ _id: { $ne: loggedInUserId } }).select("-password")];
-        res.status(200).json(new ApiResponse(200,{filteredUsers},"Users fetched successfully"));
+        res
+          .status(200)
+          .header('Access-Control-Allow-Origin', '*')
+          .json(new ApiResponse(200,{filteredUsers},"Users fetched successfully"));
       } catch (error) {
-        res.status(500).json(new ApiResponse(500,"","Internal server error"));
+        res
+          .status(500)
+          .header('Access-Control-Allow-Origin', '*')
+          .json(new ApiResponse(500,"","Internal server error"));
       }
 });
 
@@ -32,9 +38,15 @@ const getMessages=asyncHandler(async (req,res)=>{
       ],
     });
 
-    res.status(200).json(new ApiResponse(200,{messages},"Messages retrieved successfully"));
+    res
+      .status(200)
+      .header('Access-Control-Allow-Origin', '*')
+      .json(new ApiResponse(200,{messages},"Messages retrieved successfully"));
   } catch (error) {
-    res.status(500).json(new ApiResponse(500,'',"Internal server error" ));
+    res
+      .status(500)
+      .header('Access-Control-Allow-Origin', '*')
+      .json(new ApiResponse(500,'',"Internal server error" ));
   }
 });
 
@@ -119,9 +131,15 @@ const sendMessage=asyncHandler(async (req,res)=>{
         
         // We don't need to emit back to sender - the client already has the message
     
-        res.status(201).json(new ApiResponse(201,{newMessage},"Message sent successfully"));
+        res
+          .status(201)
+          .header('Access-Control-Allow-Origin', '*')
+          .json(new ApiResponse(201,{newMessage},"Message sent successfully"));
       } catch (error) {
-        res.status(500).json(new ApiResponse(500,'',"Internal server error"));
+        res
+          .status(500)
+          .header('Access-Control-Allow-Origin', '*')
+          .json(new ApiResponse(500,'',"Internal server error"));
       }
 });
 

@@ -8,25 +8,59 @@ dotenv.config({
     path: './.env'
 });
 
-// Add a direct middleware to the http server for handling preflight requests
-// This is a last resort approach to fix CORS issues
+// Direct server-level CORS handler for all requests
+// This ensures CORS headers are sent even if Express middleware isn't hit
 server.on('request', (req, res) => {
-    // Only intercept OPTIONS requests
-    if (req.method === 'OPTIONS') {
-        console.log('HTTP SERVER LEVEL: Intercepted OPTIONS request for:', req.url);
+    const oldEnd = res.end;
+    const oldWriteHead = res.writeHead;
+    const oldSetHeader = res.setHeader;
+    
+    // Override setHeader to ensure our CORS headers aren't overwritten
+    res.setHeader = function(name, value) {
+        if (name.toLowerCase() === 'access-control-allow-origin') return;
+        if (name.toLowerCase() === 'access-control-allow-methods') return;
+        if (name.toLowerCase() === 'access-control-allow-headers') return;
+        if (name.toLowerCase() === 'access-control-allow-credentials') return;
+        return oldSetHeader.apply(this, arguments);
+    };
+    
+    // Override writeHead to inject CORS headers
+    res.writeHead = function(statusCode, statusMessage, headers) {
+        let newHeaders = headers || {};
         
-        // Set CORS headers
+        if (typeof statusMessage === 'object') {
+            newHeaders = statusMessage;
+            statusMessage = undefined;
+        }
+        
+        // Force CORS headers
+        newHeaders['Access-Control-Allow-Origin'] = '*';
+        newHeaders['Access-Control-Allow-Methods'] = 'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS';
+        newHeaders['Access-Control-Allow-Headers'] = 'Origin, X-Requested-With, Content-Type, Accept, Authorization';
+        
+        if (statusMessage) {
+            return oldWriteHead.call(this, statusCode, statusMessage, newHeaders);
+        }
+        return oldWriteHead.call(this, statusCode, newHeaders);
+    };
+    
+    // Override end to ensure CORS headers are sent
+    res.end = function() {
+        // Ensure CORS headers are set before ending response
+        res.setHeader = oldSetHeader; // Restore original for this call
         res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Request-Method', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET, POST, PUT, DELETE, PATCH');
-        res.setHeader('Access-Control-Allow-Headers', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
         
-        // End the request with 204 status
-        res.writeHead(204);
-        res.end();
-        return true; // Indicate that we've handled the request
-    }
-    return false; // Let the normal request flow continue
+        // Special handling for OPTIONS requests
+        if (req.method === 'OPTIONS') {
+            console.log('HTTP SERVER LEVEL: Intercepted OPTIONS request for:', req.url);
+            res.statusCode = 204;
+            return oldEnd.call(this, '');
+        }
+        
+        return oldEnd.apply(this, arguments);
+    };
 });
 
 const PORT = process.env.PORT || 3000;

@@ -57,6 +57,8 @@ const corsOptions = {
 // MOST PERMISSIVE CORS - Override all other CORS configurations
 // This is a last resort approach for debugging
 app.use((req, res, next) => {
+    console.log(`${req.method} ${req.path} - Origin: ${req.headers.origin || 'none'}`);
+    
     // Set permissive CORS headers for ALL requests
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS');
@@ -65,9 +67,35 @@ app.use((req, res, next) => {
     
     // Handle preflight requests immediately
     if (req.method === 'OPTIONS') {
-        console.log('*** Intercepted OPTIONS request ***');
-        return res.status(204).end();
+        console.log(`*** Intercepted OPTIONS request for ${req.path} ***`);
+        res.writeHead(204, {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': '*',
+            'Access-Control-Max-Age': '86400'
+        });
+        res.end();
+        return;
     }
+    
+    // Patch the res.writeHead method to ensure CORS headers are always set
+    const originalWriteHead = res.writeHead;
+    res.writeHead = function(statusCode, statusMessage, headers) {
+        // Add CORS headers to every response
+        headers = headers || {};
+        if (typeof statusMessage === 'object') {
+            headers = statusMessage;
+            statusMessage = undefined;
+        }
+        
+        headers['Access-Control-Allow-Origin'] = '*';
+        headers['Access-Control-Allow-Methods'] = 'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS';
+        headers['Access-Control-Allow-Headers'] = '*';
+        
+        return statusMessage ? 
+            originalWriteHead.call(this, statusCode, statusMessage, headers) : 
+            originalWriteHead.call(this, statusCode, headers);
+    };
     
     next();
 });
